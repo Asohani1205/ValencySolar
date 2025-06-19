@@ -45,6 +45,17 @@ export const vendors = pgTable("vendors", {
   distance: real("distance").notNull(),
   responseTime: text("response_time").notNull(),
   pincode: text("pincode").notNull(),
+  specializations: text("specializations").array().notNull(),
+  certifications: text("certifications").array().notNull(),
+  experienceYears: integer("experience_years").notNull(),
+  installationsCompleted: integer("installations_completed").notNull(),
+  warrantyYears: integer("warranty_years").notNull(),
+  financingOptions: text("financing_options").array().notNull(),
+  priceRange: text("price_range").notNull(),
+  contactPhone: text("contact_phone").notNull(),
+  contactEmail: text("contact_email").notNull(),
+  website: text("website"),
+  servicesOffered: text("services_offered").array().notNull(),
 });
 
 export const reviews = pgTable("reviews", {

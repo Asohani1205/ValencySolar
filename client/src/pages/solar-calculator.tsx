@@ -1,16 +1,25 @@
 import { useState } from "react";
 import { Sun, Calculator, Users, Award } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import SolarForm from "@/components/solar-form";
 import AiChat from "@/components/ai-chat";
 import ResultsDisplay from "@/components/results-display";
 import VendorSection from "@/components/vendor-section";
+import VendorComparison from "@/components/vendor-comparison";
+import FinancingOptions from "@/components/financing-options";
 import TrustIndicators from "@/components/trust-indicators";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { SolarAssessment } from "@shared/schema";
 
 export default function SolarCalculator() {
   const [currentAssessment, setCurrentAssessment] = useState<SolarAssessment | null>(null);
   const [showResults, setShowResults] = useState(false);
   const [showVendors, setShowVendors] = useState(false);
+
+  const { data: locationData } = useQuery({
+    queryKey: [`/api/location/${currentAssessment?.pincode}`],
+    enabled: !!currentAssessment?.pincode,
+  });
 
   const handleAssessmentComplete = (assessment: SolarAssessment) => {
     setCurrentAssessment(assessment);
@@ -75,9 +84,35 @@ export default function SolarCalculator() {
           </div>
         </div>
 
-        {/* Vendor Section */}
+        {/* Enhanced Vendor and Financing Section */}
         {showVendors && currentAssessment && (
-          <VendorSection pincode={currentAssessment.pincode} />
+          <div className="mt-8 space-y-6">
+            <Tabs defaultValue="vendors" className="w-full">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="vendors">Local Vendors</TabsTrigger>
+                <TabsTrigger value="compare">Compare Vendors</TabsTrigger>
+                <TabsTrigger value="financing">Financing Options</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="vendors" className="mt-6">
+                <VendorSection pincode={currentAssessment.pincode} />
+              </TabsContent>
+
+              <TabsContent value="compare" className="mt-6">
+                <VendorComparison 
+                  pincode={currentAssessment.pincode} 
+                  systemSize={currentAssessment.systemSize || 3}
+                />
+              </TabsContent>
+
+              <TabsContent value="financing" className="mt-6">
+                <FinancingOptions 
+                  assessment={currentAssessment}
+                  locationData={locationData}
+                />
+              </TabsContent>
+            </Tabs>
+          </div>
         )}
       </main>
 

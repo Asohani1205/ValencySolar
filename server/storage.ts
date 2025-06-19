@@ -59,30 +59,63 @@ export class MemStorage implements IStorage {
     const sampleVendors: InsertVendor[] = [
       {
         name: "SunPower Solutions",
-        description: "Specializes in residential solar • 500+ installations",
+        description: "Specializes in residential solar installations with premium equipment",
         rating: 4.8,
         reviewCount: 124,
         distance: 2.5,
         responseTime: "Responds within 2 hours",
-        pincode: "560001"
+        pincode: "560001",
+        specializations: ["Residential Solar", "Grid-tied Systems", "Net Metering"],
+        certifications: ["MNRE Approved", "ISO 9001", "NABCB Certified"],
+        experienceYears: 8,
+        installationsCompleted: 500,
+        warrantyYears: 25,
+        financingOptions: ["Solar Loans", "EMI Options", "Leasing", "CAPEX Model"],
+        priceRange: "₹45,000 - ₹55,000 per kW",
+        contactPhone: "+91-9876543210",
+        contactEmail: "contact@sunpowersolutions.in",
+        website: "www.sunpowersolutions.in",
+        servicesOffered: ["Site Survey", "Design", "Installation", "Maintenance", "Subsidy Assistance"]
       },
       {
         name: "Green Energy Co.",
-        description: "Premium installations • 10 year warranty",
+        description: "Premium solar installations with 10-year comprehensive warranty",
         rating: 4.9,
         reviewCount: 89,
         distance: 4.1,
         responseTime: "Responds within 1 hour",
-        pincode: "560001"
+        pincode: "560001",
+        specializations: ["Premium Systems", "Commercial Solar", "Energy Storage"],
+        certifications: ["MNRE Approved", "IEC Certified", "BIS Standards"],
+        experienceYears: 12,
+        installationsCompleted: 350,
+        warrantyYears: 25,
+        financingOptions: ["Bank Partnerships", "Zero Down Payment", "Custom Financing"],
+        priceRange: "₹55,000 - ₹70,000 per kW",
+        contactPhone: "+91-9876543211",
+        contactEmail: "info@greenenergy.co.in",
+        website: "www.greenenergy.co.in",
+        servicesOffered: ["Premium Design", "Installation", "O&M", "Performance Monitoring", "Insurance"]
       },
       {
         name: "Solar Tech India",
-        description: "Budget-friendly • Government certified",
+        description: "Budget-friendly solar solutions with government certification",
         rating: 4.7,
         reviewCount: 203,
         distance: 3.2,
         responseTime: "Responds within 3 hours",
-        pincode: "560001"
+        pincode: "560001",
+        specializations: ["Budget Systems", "Government Schemes", "Rural Installations"],
+        certifications: ["MNRE Approved", "Government Certified", "Quality Assured"],
+        experienceYears: 6,
+        installationsCompleted: 800,
+        warrantyYears: 10,
+        financingOptions: ["Government Schemes", "Affordable EMI", "Subsidy Processing"],
+        priceRange: "₹35,000 - ₹45,000 per kW",
+        contactPhone: "+91-9876543212",
+        contactEmail: "support@solartechindia.com",
+        website: "www.solartechindia.com",
+        servicesOffered: ["Basic Installation", "Government Approvals", "Subsidy Processing", "Basic Maintenance"]
       }
     ];
 
@@ -131,6 +164,14 @@ export class MemStorage implements IStorage {
     const newAssessment: SolarAssessment = {
       ...assessment,
       id,
+      subsidyInfo: assessment.subsidyInfo || null,
+      systemSize: assessment.systemSize || null,
+      totalCost: assessment.totalCost || null,
+      subsidy: assessment.subsidy || null,
+      finalCost: assessment.finalCost || null,
+      annualGeneration: assessment.annualGeneration || null,
+      annualSavings: assessment.annualSavings || null,
+      roiYears: assessment.roiYears || null,
       createdAt: new Date().toISOString()
     };
     this.assessments.set(id, newAssessment);
@@ -152,7 +193,11 @@ export class MemStorage implements IStorage {
 
   async createChatMessage(message: InsertChatMessage): Promise<ChatMessage> {
     const id = this.currentId++;
-    const newMessage: ChatMessage = { ...message, id };
+    const newMessage: ChatMessage = { 
+      ...message, 
+      id,
+      assessmentId: message.assessmentId || null
+    };
     this.messages.set(id, newMessage);
     return newMessage;
   }
@@ -172,7 +217,11 @@ export class MemStorage implements IStorage {
 
   async createVendor(vendor: InsertVendor): Promise<Vendor> {
     const id = this.currentId++;
-    const newVendor: Vendor = { ...vendor, id };
+    const newVendor: Vendor = { 
+      ...vendor, 
+      id,
+      website: vendor.website || null
+    };
     this.vendors.set(id, newVendor);
     return newVendor;
   }

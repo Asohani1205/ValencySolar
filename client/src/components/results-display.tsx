@@ -3,13 +3,14 @@ import { Battery, Zap, DollarSign, Clock, TrendingUp, CheckCircle } from "lucide
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import type { SolarAssessment } from "@shared/schema";
+import type { LocationData } from "../../../server/data/location-data";
 
 interface ResultsDisplayProps {
   assessment: SolarAssessment;
 }
 
 export default function ResultsDisplay({ assessment }: ResultsDisplayProps) {
-  const { data: locationData } = useQuery({
+  const { data: locationData } = useQuery<LocationData>({
     queryKey: [`/api/location/${assessment.pincode}`],
   });
 
@@ -62,16 +63,71 @@ export default function ResultsDisplay({ assessment }: ResultsDisplayProps) {
               <span>System Cost</span>
               <span className="font-medium">₹{assessment.totalCost?.toLocaleString()}</span>
             </div>
-            <div className="flex justify-between text-green-600">
-              <span>Government Subsidy</span>
-              <span className="font-medium">-₹{assessment.subsidy?.toLocaleString()}</span>
-            </div>
+            
+            {/* Detailed Subsidy Breakdown */}
+            {locationData && (
+              <>
+                <div className="flex justify-between text-blue-600">
+                  <span>Central Govt. Subsidy</span>
+                  <span className="font-medium">
+                    -₹{Math.min(
+                      (assessment.systemSize || 0) <= 3 
+                        ? (assessment.systemSize || 0) * locationData.centralSubsidy.upTo3kW
+                        : (3 * locationData.centralSubsidy.upTo3kW) + (((assessment.systemSize || 0) - 3) * locationData.centralSubsidy.above3kW),
+                      locationData.centralSubsidy.maxAmount
+                    ).toLocaleString()}
+                  </span>
+                </div>
+                <div className="flex justify-between text-green-600">
+                  <span>{locationData.state} State Subsidy</span>
+                  <span className="font-medium">
+                    -₹{Math.min(
+                      (assessment.totalCost || 0) * locationData.stateSubsidy.rate,
+                      locationData.stateSubsidy.maxAmount
+                    ).toLocaleString()}
+                  </span>
+                </div>
+              </>
+            )}
+            
             <div className="border-t pt-2 flex justify-between font-semibold">
               <span>Your Investment</span>
               <span>₹{assessment.finalCost?.toLocaleString()}</span>
             </div>
           </div>
         </div>
+
+        {/* Location-specific Benefits */}
+        {locationData && (
+          <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-xl p-4">
+            <h4 className="font-semibold text-gray-800 mb-3">
+              {locationData.city}, {locationData.state} Benefits
+            </h4>
+            <div className="grid md:grid-cols-2 gap-3 text-sm">
+              <div>
+                <div className="font-medium text-blue-600">Net Metering Rate</div>
+                <div className="text-gray-600">₹{locationData.netMeteringRate}/kWh for excess power</div>
+              </div>
+              <div>
+                <div className="font-medium text-green-600">Solar Irradiance</div>
+                <div className="text-gray-600">{locationData.solarIrradiance} kWh/m²/day</div>
+              </div>
+            </div>
+            
+            {locationData.stateSubsidy.additionalIncentives.length > 0 && (
+              <div className="mt-3">
+                <div className="font-medium text-gray-700 mb-2">Additional State Incentives:</div>
+                <div className="flex flex-wrap gap-2">
+                  {locationData.stateSubsidy.additionalIncentives.map((incentive: string, idx: number) => (
+                    <span key={idx} className="bg-white px-2 py-1 rounded text-xs text-gray-600 border">
+                      {incentive}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Energy Generation */}
         <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl p-4">
