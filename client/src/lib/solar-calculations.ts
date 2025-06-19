@@ -1,5 +1,5 @@
 import type { SolarAssessment } from "@shared/schema";
-import type { LocationData } from "../../../server/data/location-data";
+import type { PMSuryaGharSubsidy } from "../../../server/data/pm-surya-ghar-subsidies";
 
 export interface SolarCalculationResult {
   systemSize: number;
@@ -15,7 +15,7 @@ export interface SolarCalculationResult {
 
 export function calculateSolarSystem(
   assessment: SolarAssessment, 
-  locationData: LocationData
+  locationData: PMSuryaGharSubsidy
 ): SolarCalculationResult {
   const monthlyConsumption = assessment.energyConsumption;
   const dailyConsumption = monthlyConsumption / 30;
@@ -54,11 +54,12 @@ export function calculateSolarSystem(
     locationData.centralSubsidy.maxAmount
   );
   
-  // Calculate State Subsidy
-  const stateSubsidy = Math.min(
-    totalCost * locationData.stateSubsidy.rate,
-    locationData.stateSubsidy.maxAmount
-  );
+  // Calculate State Subsidy - handle percentage vs fixed amount
+  const stateSubsidyRate = locationData.stateSubsidy.residential.rate;
+  const stateSubsidyAmount = stateSubsidyRate > 1 
+    ? stateSubsidyRate // Fixed amount in rupees
+    : totalCost * (stateSubsidyRate / 100); // Percentage
+  const stateSubsidy = Math.min(stateSubsidyAmount, locationData.stateSubsidy.residential.maxAmount);
   
   const totalSubsidy = centralSubsidy + stateSubsidy;
   const finalCost = totalCost - totalSubsidy;
@@ -71,7 +72,7 @@ export function calculateSolarSystem(
   // Savings calculation including net metering
   const savingsPerUnit = locationData.electricityTariff;
   const excessGeneration = Math.max(0, annualGeneration - (monthlyConsumption * 12));
-  const netMeteringSavings = excessGeneration * locationData.netMeteringRate;
+  const netMeteringSavings = excessGeneration * locationData.netMetering.feedInTariff;
   const directSavings = Math.min(annualGeneration, monthlyConsumption * 12) * savingsPerUnit;
   const annualSavings = directSavings + netMeteringSavings;
   

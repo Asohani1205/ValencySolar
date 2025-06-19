@@ -52,8 +52,37 @@ export async function getChatResponse(message: string, context?: any): Promise<s
     return response.choices[0].message.content || "I'm sorry, I couldn't process your request right now. Please try again.";
   } catch (error) {
     console.error("OpenAI API error:", error);
-    return "I'm having trouble connecting right now. Please try again in a moment, or continue with your solar assessment.";
+    // Fallback responses for common solar queries
+    return getFallbackResponse(message.toLowerCase());
   }
+}
+
+function getFallbackResponse(message: string): string {
+  if (message.includes('subsidy') || message.includes('scheme')) {
+    return `Under PM Surya Ghar Yojana, you can get up to ₹78,000 central subsidy plus state subsidies. For 1-3kW: ₹14,588/kW, above 3kW: ₹7,294/kW. State subsidies vary by location. Would you like specific subsidy details for your area?`;
+  }
+  
+  if (message.includes('financing') || message.includes('loan') || message.includes('emi')) {
+    return `Solar financing options in India include: 1) Solar loans at 8.5-12% interest (HDFC, SBI, ICICI), 2) Zero down payment schemes, 3) CAPEX model (own the system), 4) Leasing/PPA models. Which option interests you most?`;
+  }
+  
+  if (message.includes('vendor') || message.includes('installer')) {
+    return `We connect you with MNRE-approved solar installers in your area. Look for vendors with proper certifications, good ratings, comprehensive warranties, and transparent pricing. Would you like to compare vendors for your location?`;
+  }
+  
+  if (message.includes('savings') || message.includes('roi')) {
+    return `Solar systems typically pay for themselves in 4-7 years in India. Annual savings depend on your electricity consumption, local tariffs, and system size. A 3kW system can save ₹30,000-50,000 annually. What's your monthly electricity bill?`;
+  }
+  
+  if (message.includes('installation') || message.includes('process')) {
+    return `Solar installation process: 1) Site survey (1-2 days), 2) Design & approvals (2-3 weeks), 3) Installation (2-3 days), 4) Grid connection & commissioning (1-2 weeks). Total timeline: 4-6 weeks. Need help with any specific step?`;
+  }
+  
+  if (message.includes('maintenance')) {
+    return `Solar panels need minimal maintenance: monthly cleaning, annual professional inspection, monitoring through app. Maintenance cost: ₹2,000-5,000/year. Most systems come with 25-year warranties. Any specific maintenance concerns?`;
+  }
+  
+  return `Hello! I'm your Valency Solar Assistant. I can help with solar system sizing, government subsidies, financing options, vendor selection, and installation guidance. What would you like to know about going solar?`;
 }
 
 export async function getSolarRecommendation(assessmentData: any): Promise<string> {

@@ -334,13 +334,13 @@ export default function FinancingOptions({ assessment, locationData }: Financing
                         {locationData.centralSubsidy.upTo3kW && (
                           <div className="flex justify-between text-sm">
                             <span>First 3kW:</span>
-                            <span>₹{(Math.min(3, assessment.systemSize) * locationData.centralSubsidy.upTo3kW).toLocaleString()}</span>
+                            <span>₹{(Math.min(3, assessment.systemSize || 0) * locationData.centralSubsidy.upTo3kW).toLocaleString()}</span>
                           </div>
                         )}
-                        {assessment.systemSize > 3 && (
+                        {(assessment.systemSize || 0) > 3 && (
                           <div className="flex justify-between text-sm">
                             <span>Above 3kW:</span>
-                            <span>₹{((assessment.systemSize - 3) * locationData.centralSubsidy.above3kW).toLocaleString()}</span>
+                            <span>₹{(((assessment.systemSize || 0) - 3) * locationData.centralSubsidy.above3kW).toLocaleString()}</span>
                           </div>
                         )}
                       </div>

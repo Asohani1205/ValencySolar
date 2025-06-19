@@ -7,7 +7,7 @@ import ResultsDisplay from "@/components/results-display";
 import VendorSection from "@/components/vendor-section";
 import VendorComparison from "@/components/vendor-comparison";
 import FinancingOptions from "@/components/financing-options";
-import TrustIndicators from "@/components/trust-indicators";
+import UserReviews from "@/components/user-reviews";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { SolarAssessment } from "@shared/schema";
 
@@ -80,7 +80,7 @@ export default function SolarCalculator() {
           {/* Sidebar */}
           <div className="space-y-6">
             <AiChat assessmentId={currentAssessment?.id} />
-            <TrustIndicators />
+            <UserReviews limit={3} showAddReview={false} />
           </div>
         </div>
 
@@ -114,6 +114,17 @@ export default function SolarCalculator() {
             </Tabs>
           </div>
         )}
+
+        {/* Community Reviews Section */}
+        <div className="mt-12 bg-white rounded-2xl shadow-lg p-8">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold text-gray-800 mb-4">What Our Community Says</h2>
+            <p className="text-gray-600 max-w-2xl mx-auto">
+              Real experiences from solar adopters across India. Join thousands who've made the switch to clean energy.
+            </p>
+          </div>
+          <UserReviews showAddReview={true} />
+        </div>
       </main>
 
       {/* Floating Chat Button for Mobile */}

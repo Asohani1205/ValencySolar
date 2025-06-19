@@ -53,7 +53,7 @@ export default function VendorComparison({ pincode, systemSize = 3 }: VendorComp
       const minPrice = parseInt(priceRange[0].replace(/[^\d]/g, ''));
       const maxPrice = parseInt(priceRange[1].replace(/[^\d]/g, ''));
       const avgPrice = (minPrice + maxPrice) / 2;
-      return (avgPrice * systemSize).toLocaleString();
+      return (avgPrice * (systemSize || 3)).toLocaleString();
     }
     return "Contact for quote";
   };
