@@ -1,0 +1,391 @@
+import React, { useState, useEffect } from 'react';
+import { Sun, Calculator, MapPin, Zap, Home, Eye, DollarSign, Award, MessageCircle, Send, RotateCcw } from 'lucide-react';
+
+const ValencySolarAssistant = () => {
+  const [currentStep, setCurrentStep] = useState('greeting');
+  const [messages, setMessages] = useState([]);
+  const [currentMessage, setCurrentMessage] = useState('');
+  const [userInput, setUserInput] = useState('');
+  const [userData, setUserData] = useState({
+    pincode: '',
+    energyConsumption: '',
+    roofSpace: '',
+    sunlightExposure: '',
+    shading: '',
+    panelQuality: '',
+    budget: '',
+    subsidyInfo: ''
+  });
+  const [calculationResults, setCalculationResults] = useState(null);
+  const [isTyping, setIsTyping] = useState(false);
+
+  const steps = [
+    'greeting',
+    'pincode',
+    'energyConsumption',
+    'roofSpace',
+    'sunlightExposure',
+    'shading',
+    'panelQuality',
+    'budget',
+    'subsidyInfo',
+    'calculation',
+    'results',
+    'chat'
+  ];
+
+  const stepMessages = {
+    greeting: "Hello! 👋 I'm Valency Solar Assistant, your personal AI guide for solar energy solutions. I'm here to help you understand your solar potential and create a customized recommendation based on your specific needs.\n\nLet's start this journey together! Are you ready to explore how solar can benefit you?",
+    
+    pincode: "Great! Let's begin with your location. 📍\n\nCould you please share your 6-digit pincode? This helps me understand your local solar conditions, weather patterns, and available government incentives in your area.",
+    
+    energyConsumption: "Perfect! Now let's talk about your energy needs. ⚡\n\nWhat's your average monthly electricity consumption in kWh? You can find this on your electricity bill under 'Units Consumed' or 'kWh Used'. If you're not sure, you can also tell me your average monthly electricity bill amount, and I'll help estimate it.",
+    
+    roofSpace: "Excellent! Now I need to understand your installation space. 🏠\n\nHow much roof space do you have available for solar panels? Please provide:\n- Total roof area (in square feet or square meters)\n- Type of roof (flat/sloped)\n- Any obstructions like water tanks, AC units, etc.",
+    
+    sunlightExposure: "Great information! Let's assess your solar potential. ☀️\n\nHow would you describe the sunlight exposure at your location?\n- How many hours of direct sunlight does your roof get daily?\n- Which direction does your roof face (North/South/East/West)?\n- Are there any tall buildings or trees nearby?",
+    
+    shading: "Thanks! Now about shading conditions. 🌳\n\nDoes your roof area experience any shading during the day? Please tell me:\n- Any shading from trees, buildings, or other structures?\n- What time of day does shading occur?\n- How much of your roof gets affected by shading?",
+    
+    panelQuality: "Perfect! Let's discuss panel preferences. 🔋\n\nWhat's your preference for solar panel quality and efficiency?\n- Premium panels (higher efficiency, longer warranty, higher cost)\n- Standard panels (good efficiency, standard warranty, moderate cost)\n- Budget panels (basic efficiency, shorter warranty, lower cost)\n- Or would you like me to recommend based on your needs?",
+    
+    budget: "Great choice! Now let's talk about your investment. 💰\n\nWhat's your budget range for the solar installation?\n- Please provide your preferred budget range in INR\n- Are you looking for financing options?\n- Do you want to prioritize lowest cost or best long-term value?",
+    
+    subsidyInfo: "Excellent! Finally, let's check your subsidy eligibility. 🏆\n\nDo you have information about available government subsidies in your area?\n- Are you aware of central/state government solar subsidies?\n- Do you need help understanding the subsidy application process?\n- Any specific requirements or constraints for availing subsidies?",
+    
+    calculation: "Perfect! I have all the information I need. Let me analyze your requirements and calculate the best solar solution for you... 🔄\n\nAnalyzing:\n✓ Location and solar potential\n✓ Energy requirements\n✓ Space availability\n✓ Shading analysis\n✓ Panel recommendations\n✓ Budget optimization\n✓ Subsidy calculations",
+    
+    results: "🎉 Here's your personalized solar recommendation!"
+  };
+
+  const addMessage = (message, isUser = false, delay = 0) => {
+    setTimeout(() => {
+      setMessages(prev => [...prev, { 
+        text: message, 
+        isUser, 
+        timestamp: new Date(),
+        id: Date.now() + Math.random()
+      }]);
+    }, delay);
+  };
+
+  const showTypingIndicator = (duration = 2000) => {
+    setIsTyping(true);
+    setTimeout(() => setIsTyping(false), duration);
+  };
+
+  const calculateSolarSystem = () => {
+    const monthlyConsumption = parseFloat(userData.energyConsumption) || 300;
+    const dailyConsumption = monthlyConsumption / 30;
+    
+    // Base system size calculation
+    let systemSizeKw = Math.ceil(dailyConsumption * 1.3); // 30% buffer
+    
+    // Adjust based on roof space (assuming 100 sq ft per kW)
+    const roofArea = parseFloat(userData.roofSpace) || 1000;
+    const maxSystemFromRoof = Math.floor(roofArea / 100);
+    systemSizeKw = Math.min(systemSizeKw, maxSystemFromRoof);
+    
+    // Adjust for shading (reduce by 10-20% if significant shading)
+    const shadingFactor = userData.shading.toLowerCase().includes('significant') || 
+                         userData.shading.toLowerCase().includes('heavy') ? 0.8 : 0.95;
+    systemSizeKw = Math.floor(systemSizeKw * shadingFactor);
+    
+    // Panel quality pricing
+    let costPerKw = 50000; // Base cost
+    if (userData.panelQuality.toLowerCase().includes('premium')) {
+      costPerKw = 65000;
+    } else if (userData.panelQuality.toLowerCase().includes('budget')) {
+      costPerKw = 40000;
+    }
+    
+    const totalCost = systemSizeKw * costPerKw;
+    const subsidy = Math.min(78000, totalCost * 0.3); // 30% subsidy up to ₹78,000
+    const finalCost = totalCost - subsidy;
+    
+    // Savings calculation
+    const sunlightHours = userData.sunlightExposure.includes('8') ? 5.5 : 
+                         userData.sunlightExposure.includes('6') ? 4.5 : 5.0;
+    const dailyGeneration = systemSizeKw * sunlightHours * shadingFactor;
+    const monthlyGeneration = dailyGeneration * 30;
+    const annualGeneration = monthlyGeneration * 12;
+    const savingsPerUnit = 8; // ₹8 per kWh
+    const annualSavings = Math.min(annualGeneration, monthlyConsumption * 12) * savingsPerUnit;
+    const roiYears = Math.ceil(finalCost / annualSavings);
+    
+    return {
+      systemSize: systemSizeKw,
+      totalCost,
+      subsidy,
+      finalCost,
+      annualGeneration: Math.round(annualGeneration),
+      annualSavings: Math.round(annualSavings),
+      roiYears,
+      dailyGeneration: Math.round(dailyGeneration * 10) / 10,
+      monthlyGeneration: Math.round(monthlyGeneration)
+    };
+  };
+
+  const handleSubmit = () => {
+    if (!userInput.trim()) return;
+    
+    addMessage(userInput, true);
+    const currentStepIndex = steps.indexOf(currentStep);
+    
+    // Store user data
+    const stepKey = steps[currentStepIndex];
+    setUserData(prev => ({
+      ...prev,
+      [stepKey]: userInput
+    }));
+    
+    setUserInput('');
+    
+    // Move to next step
+    if (currentStepIndex < steps.length - 1) {
+      const nextStep = steps[currentStepIndex + 1];
+      setCurrentStep(nextStep);
+      
+      if (nextStep === 'calculation') {
+        showTypingIndicator(3000);
+        addMessage(stepMessages[nextStep], false, 500);
+        
+        setTimeout(() => {
+          const results = calculateSolarSystem();
+          setCalculationResults(results);
+          setCurrentStep('results');
+          
+          const resultsMessage = `🎉 Here's your personalized solar recommendation!\n\n🔋 **Recommended System Size:** ${results.systemSize} kW\n💰 **Total System Cost:** ₹${results.totalCost.toLocaleString()}\n🏆 **Government Subsidy:** ₹${results.subsidy.toLocaleString()}\n💳 **Your Investment:** ₹${results.finalCost.toLocaleString()}\n\n⚡ **Energy Generation:**\n• Daily: ${results.dailyGeneration} kWh\n• Monthly: ${results.monthlyGeneration} kWh\n• Annual: ${results.annualGeneration} kWh\n\n💵 **Annual Savings:** ₹${results.annualSavings.toLocaleString()}\n📈 **ROI Period:** ${results.roiYears} years\n\nThis system will meet approximately ${Math.round((results.annualGeneration / (parseFloat(userData.energyConsumption || 300) * 12)) * 100)}% of your annual electricity needs!\n\nWould you like me to explain any of these numbers or help you with the next steps?`;
+          
+          addMessage(resultsMessage, false);
+          setCurrentStep('chat');
+        }, 3500);
+      } else {
+        showTypingIndicator();
+        addMessage(stepMessages[nextStep], false, 1500);
+      }
+    }
+  };
+
+  const handleChatMessage = () => {
+    if (!currentMessage.trim()) return;
+    
+    addMessage(currentMessage, true);
+    const message = currentMessage.toLowerCase();
+    setCurrentMessage('');
+    
+    showTypingIndicator();
+    
+    // Simple response logic based on keywords
+    let response = "";
+    
+    if (message.includes('explain') || message.includes('understand')) {
+      response = "I'd be happy to explain! The system size is calculated based on your energy consumption with a buffer for efficiency. The ROI considers your savings from reduced electricity bills against your investment cost. Which specific aspect would you like me to elaborate on?";
+    } else if (message.includes('financing') || message.includes('loan')) {
+      response = "Yes! Many banks offer solar loans at attractive interest rates (7-10% annually). Some options include:\n• HDFC Bank Solar Loans\n• SBI Solar Financing\n• Tata Capital Solar Loans\n\nYou can also explore rooftop solar financing schemes. Would you like specific details about any of these options?";
+    } else if (message.includes('installation') || message.includes('next steps')) {
+      response = "Great question! Here are the typical next steps:\n\n1. **Site Survey** - Technical team visits for detailed assessment\n2. **Design & Approval** - System design and electricity board approvals\n3. **Subsidy Application** - Help with government subsidy paperwork\n4. **Installation** - Professional installation (2-3 days)\n5. **Commissioning** - Grid connection and system testing\n\nThe entire process typically takes 4-6 weeks. Would you like help connecting with certified installers?";
+    } else if (message.includes('maintenance') || message.includes('cleaning')) {
+      response = "Solar panels require minimal maintenance:\n• **Cleaning**: Monthly cleaning with water (avoid harsh chemicals)\n• **Monitoring**: Check generation through mobile app\n• **Annual Service**: Professional inspection once a year\n• **Warranty**: Most systems come with 10-25 year warranties\n\nMaintenance costs are typically ₹2,000-5,000 annually. The panels are quite durable and designed for 25+ years of operation!";
+    } else if (message.includes('subsidy') || message.includes('government')) {
+      response = `Based on your location (${userData.pincode}), you're eligible for:\n• **Central Subsidy**: ₹14,588 per kW (up to 3kW) + ₹7,294 per kW (above 3kW)\n• **State Subsidies**: Varies by state\n• **Net Metering**: Sell excess power back to grid\n\nFor your ${calculationResults?.systemSize}kW system, estimated subsidy is ₹${calculationResults?.subsidy.toLocaleString()}. I can help you understand the application process!`;
+    } else if (message.includes('thank') || message.includes('help')) {
+      response = "You're very welcome! I'm here to help you throughout your solar journey. Feel free to ask about financing, installation, maintenance, or any other solar-related questions. Is there anything specific you'd like to know more about?";
+    } else {
+      response = "That's a great question! As your solar assistant, I can help you with:\n• Understanding your solar calculations\n• Financing and loan options\n• Installation process and timeline\n• Government subsidies and applications\n• System maintenance and monitoring\n• Connecting with certified installers\n\nWhat would you like to know more about?";
+    }
+    
+    addMessage(response, false, 1500);
+  };
+
+  const resetConversation = () => {
+    setMessages([]);
+    setCurrentStep('greeting');
+    setUserData({
+      pincode: '',
+      energyConsumption: '',
+      roofSpace: '',
+      sunlightExposure: '',
+      shading: '',
+      panelQuality: '',
+      budget: '',
+      subsidyInfo: ''
+    });
+    setCalculationResults(null);
+    setUserInput('');
+    setCurrentMessage('');
+    
+    setTimeout(() => {
+      addMessage(stepMessages.greeting, false);
+    }, 500);
+  };
+
+  useEffect(() => {
+    addMessage(stepMessages.greeting, false);
+  }, []);
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-yellow-50 to-orange-100">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-yellow-600 to-orange-600 text-white p-4 shadow-lg">
+        <div className="flex items-center justify-between max-w-4xl mx-auto">
+          <div className="flex items-center space-x-3">
+            <Sun className="w-8 h-8" />
+            <div>
+              <h1 className="text-2xl font-bold">Valency Solar Assistant</h1>
+              <p className="text-yellow-100">Your Personal Solar Energy Advisor</p>
+            </div>
+          </div>
+          <button
+            onClick={resetConversation}
+            className="flex items-center space-x-2 px-4 py-2 bg-white/20 rounded-lg hover:bg-white/30 transition-colors"
+          >
+            <RotateCcw className="w-4 h-4" />
+            <span className="text-sm">Start Over</span>
+          </button>
+        </div>
+      </div>
+
+      <div className="max-w-4xl mx-auto p-4">
+        {/* Chat Interface */}
+        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+          <div className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white p-4">
+            <h2 className="text-xl font-semibold flex items-center">
+              <MessageCircle className="w-6 h-6 mr-2" />
+              Chat with Valency Solar Assistant
+            </h2>
+            <p className="text-yellow-100 text-sm mt-1">
+              {currentStep === 'chat' ? 'Ask me anything about your solar system!' : 
+               `Step ${steps.indexOf(currentStep) + 1} of ${steps.length - 2}`}
+            </p>
+          </div>
+          
+          <div className="h-96 overflow-y-auto p-4 space-y-4 bg-gray-50">
+            {messages.map((msg) => (
+              <div key={msg.id} className={`flex ${msg.isUser ? 'justify-end' : 'justify-start'}`}>
+                <div className={`max-w-xs lg:max-w-2xl px-4 py-3 rounded-lg ${
+                  msg.isUser 
+                    ? 'bg-blue-500 text-white' 
+                    : 'bg-white text-gray-800 shadow-md border'
+                }`}>
+                  <p className="whitespace-pre-wrap text-sm leading-relaxed">{msg.text}</p>
+                  <p className="text-xs opacity-70 mt-1">
+                    {msg.timestamp.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                  </p>
+                </div>
+              </div>
+            ))}
+            
+            {isTyping && (
+              <div className="flex justify-start">
+                <div className="bg-white text-gray-800 shadow-md border px-4 py-3 rounded-lg">
+                  <div className="flex space-x-1">
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Input Area */}
+          <div className="p-4 border-t bg-white">
+            {currentStep === 'chat' ? (
+              <div className="flex space-x-2">
+                <input
+                  type="text"
+                  placeholder="Ask me anything about solar energy..."
+                  value={currentMessage}
+                  onChange={(e) => setCurrentMessage(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleChatMessage()}
+                  className="flex-1 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                />
+                <button
+                  onClick={handleChatMessage}
+                  className="px-6 py-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-lg hover:from-yellow-600 hover:to-orange-600 transition-all flex items-center"
+                >
+                  <Send className="w-4 h-4" />
+                </button>
+              </div>
+            ) : currentStep !== 'calculation' && currentStep !== 'results' && (
+              <div className="flex space-x-2">
+                <input
+                  type="text"
+                  placeholder="Type your response here..."
+                  value={userInput}
+                  onChange={(e) => setUserInput(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleSubmit()}
+                  className="flex-1 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                />
+                <button
+                  onClick={handleSubmit}
+                  className="px-6 py-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-lg hover:from-yellow-600 hover:to-orange-600 transition-all flex items-center"
+                >
+                  <Send className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* System Summary Card */}
+        {calculationResults && (
+          <div className="mt-6 bg-white rounded-xl shadow-lg p-6">
+            <h3 className="text-xl font-semibold mb-4 flex items-center text-green-700">
+              <Calculator className="w-6 h-6 mr-2" />
+              Your Solar System Summary
+            </h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="text-center p-4 bg-gradient-to-br from-yellow-100 to-yellow-200 rounded-lg">
+                <Zap className="w-8 h-8 text-yellow-600 mx-auto mb-2" />
+                <p className="text-sm text-gray-600">System Size</p>
+                <p className="text-2xl font-bold text-yellow-700">{calculationResults.systemSize} kW</p>
+              </div>
+              
+              <div className="text-center p-4 bg-gradient-to-br from-green-100 to-green-200 rounded-lg">
+                <DollarSign className="w-8 h-8 text-green-600 mx-auto mb-2" />
+                <p className="text-sm text-gray-600">Your Investment</p>
+                <p className="text-2xl font-bold text-green-700">₹{calculationResults.finalCost.toLocaleString()}</p>
+              </div>
+              
+              <div className="text-center p-4 bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg">
+                <Award className="w-8 h-8 text-blue-600 mx-auto mb-2" />
+                <p className="text-sm text-gray-600">Annual Savings</p>
+                <p className="text-2xl font-bold text-blue-700">₹{calculationResults.annualSavings.toLocaleString()}</p>
+              </div>
+              
+              <div className="text-center p-4 bg-gradient-to-br from-purple-100 to-purple-200 rounded-lg">
+                <Home className="w-8 h-8 text-purple-600 mx-auto mb-2" />
+                <p className="text-sm text-gray-600">ROI Period</p>
+                <p className="text-2xl font-bold text-purple-700">{calculationResults.roiYears} years</p>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Footer */}
+      <footer className="bg-gray-800 text-white p-6 mt-12">
+        <div className="max-w-4xl mx-auto text-center">
+          <div className="flex justify-center items-center mb-4">
+            <Sun className="w-8 h-8 text-yellow-400 mr-2" />
+            <h3 className="text-2xl font-bold">Valency Solar</h3>
+          </div>
+          <p className="text-gray-300 mb-4">
+            Empowering India's transition to clean, renewable solar energy
+          </p>
+          <div className="flex justify-center space-x-6 text-sm">
+            <span>🌱 Eco-Friendly</span>
+            <span>💰 Cost Savings</span>
+            <span>🔋 Energy Independence</span>
+            <span>🏆 Trusted Solutions</span>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+};
+
+export default ValencySolarAssistant;
