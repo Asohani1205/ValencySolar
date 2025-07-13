@@ -9,6 +9,7 @@ import VendorComparison from "@/components/vendor-comparison";
 import FinancingOptions from "@/components/financing-options";
 import UserReviews from "@/components/user-reviews";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { UserProfileCompact } from "@/components/auth/user-profile";
 import type { SolarAssessment } from "@shared/schema";
 
 export default function SolarCalculator() {
@@ -57,6 +58,7 @@ export default function SolarCalculator() {
                 <div className="text-lg font-semibold">500+</div>
                 <div className="text-xs text-amber-100">Verified Vendors</div>
               </div>
+              <UserProfileCompact />
             </div>
           </div>
         </div>

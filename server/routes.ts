@@ -6,9 +6,90 @@ import { getPMSuryaGharData } from "./data/pm-surya-ghar-subsidies";
 import { getMNREVendorsByPincode } from "./data/mnre-vendors";
 import { calculateSolarSystem } from "../client/src/lib/solar-calculations";
 import { insertSolarAssessmentSchema, insertChatMessageSchema, insertReviewSchema } from "@shared/schema";
+import { AuthService } from "./services/auth";
+import { authenticateToken, requireAdmin } from "./middleware/auth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
+  // Authentication routes
+  app.post("/api/auth/register", async (req, res) => {
+    try {
+      const result = await AuthService.register(req.body);
+      if (result.success) {
+        res.json({
+          user: result.user,
+          token: result.token,
+          message: "Registration successful"
+        });
+      } else {
+        res.status(400).json({ message: result.message });
+      }
+    } catch (error) {
+      res.status(500).json({ message: "Registration failed" });
+    }
+  });
+
+  app.post("/api/auth/login", async (req, res) => {
+    try {
+      const result = await AuthService.login(req.body);
+      if (result.success) {
+        res.json({
+          user: result.user,
+          token: result.token,
+          message: "Login successful"
+        });
+      } else {
+        res.status(401).json({ message: result.message });
+      }
+    } catch (error) {
+      res.status(500).json({ message: "Login failed" });
+    }
+  });
+
+  app.get("/api/auth/me", authenticateToken, async (req, res) => {
+    try {
+      res.json({ user: req.user });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get user profile" });
+    }
+  });
+
+  app.put("/api/auth/profile", authenticateToken, async (req, res) => {
+    try {
+      const result = await AuthService.updateProfile(req.user.id, req.body);
+      if (result.success) {
+        res.json({ user: result.user, message: "Profile updated successfully" });
+      } else {
+        res.status(400).json({ message: result.message });
+      }
+    } catch (error) {
+      res.status(500).json({ message: "Profile update failed" });
+    }
+  });
+
+  app.post("/api/auth/change-password", authenticateToken, async (req, res) => {
+    try {
+      const { currentPassword, newPassword } = req.body;
+      const result = await AuthService.changePassword(req.user.id, currentPassword, newPassword);
+      if (result.success) {
+        res.json({ message: "Password changed successfully" });
+      } else {
+        res.status(400).json({ message: result.message });
+      }
+    } catch (error) {
+      res.status(500).json({ message: "Password change failed" });
+    }
+  });
+
+  app.post("/api/auth/logout", authenticateToken, async (req, res) => {
+    try {
+      // In a real app, you might want to blacklist the token
+      res.json({ message: "Logout successful" });
+    } catch (error) {
+      res.status(500).json({ message: "Logout failed" });
+    }
+  });
+
   // Get location data by pincode (PM Surya Ghar Yojana data)
   app.get("/api/location/:pincode", async (req, res) => {
     try {

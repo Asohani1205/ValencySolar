@@ -19,7 +19,9 @@ import {
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  updateUser(id: number, user: Partial<User>): Promise<User | undefined>;
   
   createSolarAssessment(assessment: InsertSolarAssessment): Promise<SolarAssessment>;
   getSolarAssessment(id: number): Promise<SolarAssessment | undefined>;
@@ -152,9 +154,36 @@ export class MemStorage implements IStorage {
     );
   }
 
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    return Array.from(this.users.values()).find(
+      (user) => user.email === email,
+    );
+  }
+
+  async updateUser(id: number, userData: Partial<User>): Promise<User | undefined> {
+    const existing = this.users.get(id);
+    if (!existing) return undefined;
+    
+    const updated: User = { ...existing, ...userData };
+    this.users.set(id, updated);
+    return updated;
+  }
+
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = this.currentId++;
-    const user: User = { ...insertUser, id };
+    const user: User = { 
+      ...insertUser, 
+      id,
+      role: 'user',
+      phone: insertUser.phone || null,
+      address: insertUser.address || null,
+      pincode: insertUser.pincode || null,
+      isActive: true,
+      emailVerified: false,
+      lastLogin: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
     this.users.set(id, user);
     return user;
   }

@@ -51,9 +51,31 @@ export class DatabaseStorage {
     return result[0];
   }
 
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    if (!db) throw new Error("Database not available");
+    const result = await db.select().from(users).where(eq(users.email, email)).limit(1);
+    return result[0];
+  }
+
+  async updateUser(id: number, userData: Partial<User>): Promise<User | undefined> {
+    if (!db) throw new Error("Database not available");
+    const result = await db.update(users)
+      .set({ ...userData, updatedAt: new Date() })
+      .where(eq(users.id, id))
+      .returning();
+    return result[0];
+  }
+
   async createUser(user: InsertUser): Promise<User> {
     if (!db) throw new Error("Database not available");
-    const result = await db.insert(users).values(user).returning();
+    const result = await db.insert(users).values({
+      ...user,
+      role: 'user',
+      isActive: true,
+      emailVerified: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }).returning();
     return result[0];
   }
 

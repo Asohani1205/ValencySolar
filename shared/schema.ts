@@ -1,11 +1,23 @@
-import { pgTable, text, serial, integer, boolean, real, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, real, jsonb, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
+  email: text("email").notNull().unique(),
   password: text("password").notNull(),
+  firstName: text("first_name").notNull(),
+  lastName: text("last_name").notNull(),
+  role: text("role").notNull().default("user"), // user, admin
+  phone: text("phone"),
+  address: text("address"),
+  pincode: text("pincode"),
+  isActive: boolean("is_active").notNull().default(true),
+  emailVerified: boolean("email_verified").notNull().default(false),
+  lastLogin: timestamp("last_login"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
 export const solarAssessments = pgTable("solar_assessments", {
@@ -75,8 +87,42 @@ export const reviews = pgTable("reviews", {
 
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
+  email: true,
   password: true,
+  firstName: true,
+  lastName: true,
+  phone: true,
+  address: true,
+  pincode: true,
 });
+
+export const loginSchema = z.object({
+  username: z.string().min(1, "Username is required"),
+  password: z.string().min(1, "Password is required"),
+});
+
+export const registerSchema = z.object({
+  username: z.string().min(3, "Username must be at least 3 characters"),
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+  confirmPassword: z.string(),
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
+  phone: z.string().optional(),
+  address: z.string().optional(),
+  pincode: z.string().optional(),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
+});
+
+export const updateUserSchema = createInsertSchema(users).pick({
+  firstName: true,
+  lastName: true,
+  phone: true,
+  address: true,
+  pincode: true,
+}).partial();
 
 export const insertSolarAssessmentSchema = createInsertSchema(solarAssessments).omit({
   id: true,
@@ -97,6 +143,9 @@ export const insertReviewSchema = createInsertSchema(reviews).omit({
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
+export type LoginData = z.infer<typeof loginSchema>;
+export type RegisterData = z.infer<typeof registerSchema>;
+export type UpdateUserData = z.infer<typeof updateUserSchema>;
 export type SolarAssessment = typeof solarAssessments.$inferSelect;
 export type InsertSolarAssessment = z.infer<typeof insertSolarAssessmentSchema>;
 export type ChatMessage = typeof chatMessages.$inferSelect;
