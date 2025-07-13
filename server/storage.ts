@@ -172,6 +172,12 @@ export class MemStorage implements IStorage {
       annualGeneration: assessment.annualGeneration || null,
       annualSavings: assessment.annualSavings || null,
       roiYears: assessment.roiYears || null,
+      systemEfficiency: assessment.systemEfficiency || null,
+      panelEfficiency: assessment.panelEfficiency || null,
+      degradationFactor: assessment.degradationFactor || null,
+      lifetimeGeneration: assessment.lifetimeGeneration || null,
+      seasonalBreakdown: assessment.seasonalBreakdown || null,
+      savingsBreakdown: assessment.savingsBreakdown || null,
       createdAt: new Date().toISOString()
     };
     this.assessments.set(id, newAssessment);
@@ -203,25 +209,23 @@ export class MemStorage implements IStorage {
   }
 
   async getChatMessages(assessmentId?: number): Promise<ChatMessage[]> {
-    const allMessages = Array.from(this.messages.values());
     if (assessmentId) {
-      return allMessages.filter(msg => msg.assessmentId === assessmentId);
+      return Array.from(this.messages.values()).filter(
+        (message) => message.assessmentId === assessmentId,
+      );
     }
-    return allMessages;
+    return Array.from(this.messages.values());
   }
 
   async getVendorsByPincode(pincode: string): Promise<Vendor[]> {
-    // For demo purposes, return all vendors regardless of pincode
-    return Array.from(this.vendors.values());
+    return Array.from(this.vendors.values()).filter(
+      (vendor) => vendor.pincode === pincode,
+    );
   }
 
   async createVendor(vendor: InsertVendor): Promise<Vendor> {
     const id = this.currentId++;
-    const newVendor: Vendor = { 
-      ...vendor, 
-      id,
-      website: vendor.website || null
-    };
+    const newVendor: Vendor = { ...vendor, id, website: vendor.website || null };
     this.vendors.set(id, newVendor);
     return newVendor;
   }
@@ -238,4 +242,18 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+// Choose storage implementation based on environment
+const useDatabase = process.env.DATABASE_URL && process.env.DATABASE_URL !== "your_database_url_here";
+
+export const storage: IStorage = (() => {
+  if (useDatabase) {
+    try {
+      const { DatabaseStorage } = require("./database");
+      return new DatabaseStorage();
+    } catch (error) {
+      console.warn("Database not available, using in-memory storage:", error);
+      return new MemStorage();
+    }
+  }
+  return new MemStorage();
+})();

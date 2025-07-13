@@ -1,11 +1,19 @@
 import OpenAI from "openai";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY_ENV_VAR || "default_key"
-});
+// Check if OpenAI API key is properly configured
+const openaiApiKey = process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY_ENV_VAR;
+
+const openai = openaiApiKey && openaiApiKey !== "default_key" 
+  ? new OpenAI({ apiKey: openaiApiKey })
+  : null;
 
 export async function getChatResponse(message: string, context?: any): Promise<string> {
   try {
+    // If OpenAI is not configured, use fallback responses
+    if (!openai) {
+      return getFallbackResponse(message.toLowerCase());
+    }
+
     const systemPrompt = `You are Valency Solar Assistant, India's leading AI guide for solar energy solutions. You provide hyper-localized recommendations and comprehensive support throughout the solar journey.
 
     CORE EXPERTISE:
@@ -87,6 +95,11 @@ function getFallbackResponse(message: string): string {
 
 export async function getSolarRecommendation(assessmentData: any): Promise<string> {
   try {
+    // If OpenAI is not configured, use fallback recommendation
+    if (!openai) {
+      return "Your solar assessment shows excellent potential for savings and clean energy generation!";
+    }
+
     const prompt = `Based on this solar assessment data, provide a brief summary of the solar recommendation:
     
     Location: ${assessmentData.pincode}

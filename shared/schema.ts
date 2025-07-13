@@ -25,6 +25,12 @@ export const solarAssessments = pgTable("solar_assessments", {
   annualGeneration: real("annual_generation"),
   annualSavings: real("annual_savings"),
   roiYears: real("roi_years"),
+  systemEfficiency: real("system_efficiency"),
+  panelEfficiency: real("panel_efficiency"),
+  degradationFactor: real("degradation_factor"),
+  lifetimeGeneration: real("lifetime_generation"),
+  seasonalBreakdown: jsonb("seasonal_breakdown"),
+  savingsBreakdown: jsonb("savings_breakdown"),
   createdAt: text("created_at").notNull(),
 });
 

@@ -1,7 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
-import { Battery, Zap, DollarSign, Clock, TrendingUp, CheckCircle } from "lucide-react";
+import { Battery, Zap, DollarSign, Clock, TrendingUp, CheckCircle, BarChart3, Calendar, Gauge } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
 import type { SolarAssessment } from "@shared/schema";
 import type { LocationData } from "../../../server/data/location-data";
 
@@ -19,6 +20,9 @@ export default function ResultsDisplay({ assessment }: ResultsDisplayProps) {
   }
 
   const paybackProgress = Math.min((1 / (assessment.roiYears || 10)) * 100, 100);
+
+  // Enhanced calculation results (if available)
+  const enhancedResults = assessment as any; // Type assertion for enhanced results
 
   return (
     <Card className="overflow-hidden">
@@ -51,6 +55,32 @@ export default function ResultsDisplay({ assessment }: ResultsDisplayProps) {
             <div className="text-sm text-purple-800">Payback Period</div>
           </div>
         </div>
+
+        {/* System Efficiency Metrics */}
+        {enhancedResults.systemEfficiency && (
+          <div className="grid md:grid-cols-4 gap-4">
+            <div className="bg-gradient-to-br from-cyan-50 to-cyan-100 p-4 rounded-xl text-center">
+              <Gauge className="mx-auto mb-2 text-cyan-600" size={20} />
+              <div className="text-lg font-bold text-cyan-600">{enhancedResults.systemEfficiency}%</div>
+              <div className="text-xs text-cyan-800">System Efficiency</div>
+            </div>
+            <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 p-4 rounded-xl text-center">
+              <Zap className="mx-auto mb-2 text-indigo-600" size={20} />
+              <div className="text-lg font-bold text-indigo-600">{enhancedResults.panelEfficiency}%</div>
+              <div className="text-xs text-indigo-800">Panel Efficiency</div>
+            </div>
+            <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-xl text-center">
+              <TrendingUp className="mx-auto mb-2 text-orange-600" size={20} />
+              <div className="text-lg font-bold text-orange-600">{enhancedResults.degradationFactor}%</div>
+              <div className="text-xs text-orange-800">25-Year Output</div>
+            </div>
+            <div className="bg-gradient-to-br from-teal-50 to-teal-100 p-4 rounded-xl text-center">
+              <BarChart3 className="mx-auto mb-2 text-teal-600" size={20} />
+              <div className="text-lg font-bold text-teal-600">{Math.round((enhancedResults.lifetimeGeneration || 0) / 1000)}k kWh</div>
+              <div className="text-xs text-teal-800">Lifetime Generation</div>
+            </div>
+          </div>
+        )}
 
         {/* Investment Breakdown */}
         <div className="bg-gray-50 rounded-xl p-4">
@@ -96,6 +126,86 @@ export default function ResultsDisplay({ assessment }: ResultsDisplayProps) {
             </div>
           </div>
         </div>
+
+        {/* Seasonal Generation Breakdown */}
+        {enhancedResults.seasonalBreakdown && (
+          <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl p-4">
+            <h4 className="font-semibold text-gray-800 mb-3 flex items-center">
+              <Calendar className="mr-2 text-orange-600" size={16} />
+              Seasonal Generation Breakdown
+            </h4>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+              <div className="text-center">
+                <div className="text-lg font-bold text-orange-600">
+                  {Math.round(enhancedResults.seasonalBreakdown.summer)} kWh
+                </div>
+                <div className="text-gray-600">Summer</div>
+                <Badge variant="secondary" className="text-xs mt-1">+15%</Badge>
+              </div>
+              <div className="text-center">
+                <div className="text-lg font-bold text-blue-600">
+                  {Math.round(enhancedResults.seasonalBreakdown.monsoon)} kWh
+                </div>
+                <div className="text-gray-600">Monsoon</div>
+                <Badge variant="secondary" className="text-xs mt-1 bg-red-100 text-red-800">-25%</Badge>
+              </div>
+              <div className="text-center">
+                <div className="text-lg font-bold text-gray-600">
+                  {Math.round(enhancedResults.seasonalBreakdown.winter)} kWh
+                </div>
+                <div className="text-gray-600">Winter</div>
+                <Badge variant="secondary" className="text-xs mt-1 bg-gray-100 text-gray-800">-10%</Badge>
+              </div>
+              <div className="text-center">
+                <div className="text-lg font-bold text-green-600">
+                  {Math.round(enhancedResults.seasonalBreakdown.spring)} kWh
+                </div>
+                <div className="text-gray-600">Spring</div>
+                <Badge variant="secondary" className="text-xs mt-1 bg-green-100 text-green-800">+5%</Badge>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Detailed Savings Breakdown */}
+        {enhancedResults.savingsBreakdown && (
+          <div className="bg-gradient-to-r from-emerald-50 to-green-50 rounded-xl p-4">
+            <h4 className="font-semibold text-gray-800 mb-3 flex items-center">
+              <DollarSign className="mr-2 text-emerald-600" size={16} />
+              Detailed Savings Analysis
+            </h4>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+              <div className="text-center">
+                <div className="text-lg font-bold text-emerald-600">
+                  ₹{Math.round(enhancedResults.savingsBreakdown.directSavings).toLocaleString()}
+                </div>
+                <div className="text-gray-600">Direct Savings</div>
+                <div className="text-xs text-gray-500">Self-consumption</div>
+              </div>
+              <div className="text-center">
+                <div className="text-lg font-bold text-blue-600">
+                  ₹{Math.round(enhancedResults.savingsBreakdown.netMeteringSavings).toLocaleString()}
+                </div>
+                <div className="text-gray-600">Net Metering</div>
+                <div className="text-xs text-gray-500">Excess power</div>
+              </div>
+              <div className="text-center">
+                <div className="text-lg font-bold text-purple-600">
+                  ₹{Math.round(enhancedResults.savingsBreakdown.peakSavings).toLocaleString()}
+                </div>
+                <div className="text-gray-600">Peak Savings</div>
+                <div className="text-xs text-gray-500">High tariff hours</div>
+              </div>
+              <div className="text-center">
+                <div className="text-lg font-bold text-orange-600">
+                  ₹{Math.round(enhancedResults.savingsBreakdown.offPeakSavings).toLocaleString()}
+                </div>
+                <div className="text-gray-600">Off-Peak</div>
+                <div className="text-xs text-gray-500">Low tariff hours</div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Location-specific Benefits */}
         {locationData && (
