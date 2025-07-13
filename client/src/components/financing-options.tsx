@@ -1,11 +1,13 @@
 import { useState } from "react";
-import { Calculator, TrendingUp, Clock, DollarSign, CreditCard, Building, Percent } from "lucide-react";
+import { Calculator, TrendingUp, Clock, DollarSign, CreditCard, Building, Percent, Info, AlertCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Slider } from "@/components/ui/slider";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import type { SolarAssessment } from "@shared/schema";
 
 interface FinancingOptionsProps {
@@ -13,28 +15,101 @@ interface FinancingOptionsProps {
   locationData: any;
 }
 
+interface EMICalculation {
+  emi: number;
+  totalInterest: number;
+  totalAmount: number;
+  principalAmount: number;
+  downPayment: number;
+  processingFee: number;
+  totalCost: number;
+  savingsVsEMI: {
+    monthlyEMI: number;
+    monthlySavings: number;
+    netBenefit: number;
+    paybackPeriod: number;
+    roi: number;
+  };
+}
+
 export default function FinancingOptions({ assessment, locationData }: FinancingOptionsProps) {
   const [loanAmount, setLoanAmount] = useState(assessment.finalCost || 200000);
+  const [downPaymentPercent, setDownPaymentPercent] = useState(20);
   const [loanTenure, setLoanTenure] = useState(7);
   const [interestRate, setInterestRate] = useState(9.5);
+  const [processingFeePercent, setProcessingFeePercent] = useState(1.5);
 
-  const calculateEMI = () => {
-    const principal = loanAmount;
-    const rate = interestRate / 100 / 12;
-    const tenure = loanTenure * 12;
-    const emi = (principal * rate * Math.pow(1 + rate, tenure)) / (Math.pow(1 + rate, tenure) - 1);
-    return Math.round(emi);
-  };
+  // Enhanced EMI calculation with proper mathematical formula
+  const calculateEMI = (): EMICalculation => {
+    const principalAmount = loanAmount;
+    const downPayment = (principalAmount * downPaymentPercent) / 100;
+    const loanPrincipal = principalAmount - downPayment;
+    const monthlyRate = interestRate / 100 / 12;
+    const numberOfPayments = loanTenure * 12;
+    
+    // Standard EMI formula: EMI = P × r × (1 + r)^n / ((1 + r)^n - 1)
+    // Where P = Principal, r = monthly interest rate, n = total number of payments
+    const emi = loanPrincipal * monthlyRate * Math.pow(1 + monthlyRate, numberOfPayments) / 
+                (Math.pow(1 + monthlyRate, numberOfPayments) - 1);
+    
+    const totalAmount = emi * numberOfPayments;
+    const totalInterest = totalAmount - loanPrincipal;
+    const processingFee = (principalAmount * processingFeePercent) / 100;
+    const totalCost = principalAmount + totalInterest + processingFee;
 
-  const calculateSavingsVsEMI = () => {
-    const monthlyEMI = calculateEMI();
+    // Calculate savings vs EMI analysis
     const monthlySavings = (assessment.annualSavings || 0) / 12;
+    const netBenefit = monthlySavings - emi;
+    const paybackPeriod = netBenefit > 0 ? (totalCost / (netBenefit * 12)) : 0;
+    const roi = ((assessment.annualSavings || 0) / totalCost) * 100;
+
     return {
-      emi: monthlyEMI,
-      savings: Math.round(monthlySavings),
-      netBenefit: Math.round(monthlySavings - monthlyEMI)
+      emi: Math.round(emi),
+      totalInterest: Math.round(totalInterest),
+      totalAmount: Math.round(totalAmount),
+      principalAmount,
+      downPayment: Math.round(downPayment),
+      processingFee: Math.round(processingFee),
+      totalCost: Math.round(totalCost),
+      savingsVsEMI: {
+        monthlyEMI: Math.round(emi),
+        monthlySavings: Math.round(monthlySavings),
+        netBenefit: Math.round(netBenefit),
+        paybackPeriod: Math.round(paybackPeriod * 10) / 10,
+        roi: Math.round(roi * 100) / 100
+      }
     };
   };
+
+  const emiCalculation = calculateEMI();
+
+  // Calculate amortization schedule (first 12 months)
+  const getAmortizationSchedule = () => {
+    const loanPrincipal = emiCalculation.principalAmount - emiCalculation.downPayment;
+    const monthlyRate = interestRate / 100 / 12;
+    const numberOfPayments = loanTenure * 12;
+    
+    const schedule = [];
+    let remainingBalance = loanPrincipal;
+    
+    for (let month = 1; month <= Math.min(12, numberOfPayments); month++) {
+      const interestPayment = remainingBalance * monthlyRate;
+      const principalPayment = emiCalculation.emi - interestPayment;
+      remainingBalance -= principalPayment;
+      
+      schedule.push({
+        month,
+        emi: emiCalculation.emi,
+        principal: Math.round(principalPayment),
+        interest: Math.round(interestPayment),
+        remainingBalance: Math.round(remainingBalance)
+      });
+    }
+    
+    return schedule;
+  };
+
+  const amortizationSchedule = getAmortizationSchedule();
 
   const loanOptions = [
     {
@@ -43,7 +118,9 @@ export default function FinancingOptions({ assessment, locationData }: Financing
       interestRate: "8.5% - 12%",
       tenure: "Up to 15 years",
       features: ["No collateral", "Quick approval", "Flexible EMI"],
-      processingFee: "0.5% - 2%"
+      processingFee: "0.5% - 2%",
+      minAmount: 50000,
+      maxAmount: 1000000
     },
     {
       type: "Green Loan",
@@ -51,7 +128,9 @@ export default function FinancingOptions({ assessment, locationData }: Financing
       interestRate: "9% - 11.5%",
       tenure: "Up to 10 years",
       features: ["Subsidized rates", "Government backed", "Tax benefits"],
-      processingFee: "0.5% - 1%"
+      processingFee: "0.5% - 1%",
+      minAmount: 100000,
+      maxAmount: 2000000
     },
     {
       type: "Home Improvement",
@@ -59,7 +138,9 @@ export default function FinancingOptions({ assessment, locationData }: Financing
       interestRate: "10.5% - 16%",
       tenure: "Up to 7 years",
       features: ["Instant approval", "Minimal documentation", "Top-up facility"],
-      processingFee: "1% - 3%"
+      processingFee: "1% - 3%",
+      minAmount: 25000,
+      maxAmount: 500000
     },
     {
       type: "Personal Loan",
@@ -67,7 +148,9 @@ export default function FinancingOptions({ assessment, locationData }: Financing
       interestRate: "12% - 18%",
       tenure: "Up to 5 years",
       features: ["No collateral", "Quick disbursal", "Flexible tenure"],
-      processingFee: "2% - 3%"
+      processingFee: "2% - 3%",
+      minAmount: 25000,
+      maxAmount: 400000
     }
   ];
 
@@ -125,8 +208,6 @@ export default function FinancingOptions({ assessment, locationData }: Financing
       description: `${locationData.state} State Subsidy`
     }
   } : null;
-
-  const savingsComparison = calculateSavingsVsEMI();
 
   return (
     <div className="space-y-6">
@@ -231,86 +312,181 @@ export default function FinancingOptions({ assessment, locationData }: Financing
             </TabsContent>
 
             <TabsContent value="calculator" className="space-y-4">
+              <div className="grid md:grid-cols-2 gap-6">
+                {/* EMI Calculator Input */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center">
+                      <Calculator className="mr-2" />
+                      EMI Calculator
+                    </CardTitle>
+                    <p className="text-sm text-gray-600">Calculate your monthly payment and financial analysis</p>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="loan-amount">System Cost (₹)</Label>
+                        <Input
+                          id="loan-amount"
+                          type="number"
+                          value={loanAmount}
+                          onChange={(e) => setLoanAmount(Number(e.target.value))}
+                          className="mt-1"
+                        />
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="down-payment">Down Payment: {downPaymentPercent}%</Label>
+                        <Slider
+                          value={[downPaymentPercent]}
+                          onValueChange={(value) => setDownPaymentPercent(value[0])}
+                          max={50}
+                          min={0}
+                          step={5}
+                          className="mt-2"
+                        />
+                        <div className="text-sm text-gray-600 mt-1">
+                          ₹{emiCalculation.downPayment.toLocaleString()} ({downPaymentPercent}%)
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="tenure">Tenure: {loanTenure} Years</Label>
+                        <Slider
+                          value={[loanTenure]}
+                          onValueChange={(value) => setLoanTenure(value[0])}
+                          max={15}
+                          min={1}
+                          step={1}
+                          className="mt-2"
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="interest">Interest Rate: {interestRate}%</Label>
+                        <Slider
+                          value={[interestRate]}
+                          onValueChange={(value) => setInterestRate(value[0])}
+                          max={20}
+                          min={6}
+                          step={0.1}
+                          className="mt-2"
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="processing-fee">Processing Fee: {processingFeePercent}%</Label>
+                        <Slider
+                          value={[processingFeePercent]}
+                          onValueChange={(value) => setProcessingFeePercent(value[0])}
+                          max={5}
+                          min={0}
+                          step={0.1}
+                          className="mt-2"
+                        />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* EMI Results */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">EMI Breakdown</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-xl p-4">
+                      <div className="grid grid-cols-2 gap-4 text-center">
+                        <div>
+                          <div className="text-2xl font-bold text-blue-600">₹{emiCalculation.emi.toLocaleString()}</div>
+                          <div className="text-sm text-gray-600">Monthly EMI</div>
+                        </div>
+                        <div>
+                          <div className="text-2xl font-bold text-green-600">₹{emiCalculation.savingsVsEMI.monthlySavings.toLocaleString()}</div>
+                          <div className="text-sm text-gray-600">Monthly Savings</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div className="flex justify-between text-sm">
+                        <span>Principal Amount:</span>
+                        <span>₹{emiCalculation.principalAmount.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span>Down Payment:</span>
+                        <span>₹{emiCalculation.downPayment.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span>Loan Amount:</span>
+                        <span>₹{(emiCalculation.principalAmount - emiCalculation.downPayment).toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span>Total Interest:</span>
+                        <span>₹{emiCalculation.totalInterest.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span>Processing Fee:</span>
+                        <span>₹{emiCalculation.processingFee.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between text-sm font-semibold border-t pt-2">
+                        <span>Total Cost:</span>
+                        <span>₹{emiCalculation.totalCost.toLocaleString()}</span>
+                      </div>
+                    </div>
+
+                    {emiCalculation.savingsVsEMI.netBenefit >= 0 ? (
+                      <Alert className="border-green-200 bg-green-50">
+                        <AlertCircle className="h-4 w-4 text-green-600" />
+                        <AlertDescription className="text-green-800">
+                          <strong>Positive ROI!</strong> Your solar savings exceed EMI by ₹{emiCalculation.savingsVsEMI.netBenefit.toLocaleString()}/month. 
+                          Payback period: {emiCalculation.savingsVsEMI.paybackPeriod} years. ROI: {emiCalculation.savingsVsEMI.roi}%
+                        </AlertDescription>
+                      </Alert>
+                    ) : (
+                      <Alert className="border-orange-200 bg-orange-50">
+                        <AlertCircle className="h-4 w-4 text-orange-600" />
+                        <AlertDescription className="text-orange-800">
+                          <strong>Consider adjustments:</strong> EMI exceeds savings by ₹{Math.abs(emiCalculation.savingsVsEMI.netBenefit).toLocaleString()}/month. 
+                          Try increasing down payment or extending tenure.
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Amortization Schedule */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">EMI Calculator</CardTitle>
-                  <p className="text-sm text-gray-600">Calculate your monthly payment and compare with solar savings</p>
+                  <CardTitle className="text-lg">Amortization Schedule (First 12 Months)</CardTitle>
+                  <p className="text-sm text-gray-600">Breakdown of principal and interest payments</p>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid md:grid-cols-3 gap-4">
-                    <div>
-                      <Label htmlFor="loan-amount">Loan Amount (₹)</Label>
-                      <Input
-                        id="loan-amount"
-                        type="number"
-                        value={loanAmount}
-                        onChange={(e) => setLoanAmount(Number(e.target.value))}
-                        className="mt-1"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="tenure">Tenure (Years)</Label>
-                      <Input
-                        id="tenure"
-                        type="number"
-                        value={loanTenure}
-                        onChange={(e) => setLoanTenure(Number(e.target.value))}
-                        className="mt-1"
-                        min="1"
-                        max="15"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="interest">Interest Rate (%)</Label>
-                      <Input
-                        id="interest"
-                        type="number"
-                        step="0.1"
-                        value={interestRate}
-                        onChange={(e) => setInterestRate(Number(e.target.value))}
-                        className="mt-1"
-                        min="6"
-                        max="20"
-                      />
-                    </div>
+                <CardContent>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b">
+                          <th className="text-left py-2">Month</th>
+                          <th className="text-right py-2">EMI</th>
+                          <th className="text-right py-2">Principal</th>
+                          <th className="text-right py-2">Interest</th>
+                          <th className="text-right py-2">Balance</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {amortizationSchedule.map((row) => (
+                          <tr key={row.month} className="border-b border-gray-100">
+                            <td className="py-2">{row.month}</td>
+                            <td className="text-right py-2">₹{row.emi.toLocaleString()}</td>
+                            <td className="text-right py-2">₹{row.principal.toLocaleString()}</td>
+                            <td className="text-right py-2">₹{row.interest.toLocaleString()}</td>
+                            <td className="text-right py-2">₹{row.remainingBalance.toLocaleString()}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
-
-                  <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-xl p-4">
-                    <div className="grid md:grid-cols-3 gap-4 text-center">
-                      <div>
-                        <div className="text-2xl font-bold text-blue-600">₹{calculateEMI().toLocaleString()}</div>
-                        <div className="text-sm text-gray-600">Monthly EMI</div>
-                      </div>
-                      <div>
-                        <div className="text-2xl font-bold text-green-600">₹{savingsComparison.savings.toLocaleString()}</div>
-                        <div className="text-sm text-gray-600">Monthly Savings</div>
-                      </div>
-                      <div>
-                        <div className={`text-2xl font-bold ${savingsComparison.netBenefit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                          ₹{Math.abs(savingsComparison.netBenefit).toLocaleString()}
-                        </div>
-                        <div className="text-sm text-gray-600">
-                          Net {savingsComparison.netBenefit >= 0 ? 'Benefit' : 'Cost'}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {savingsComparison.netBenefit >= 0 ? (
-                    <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                      <p className="text-green-800 text-sm">
-                        Great news! Your solar savings will exceed the EMI by ₹{savingsComparison.netBenefit.toLocaleString()} per month.
-                        This means your solar system pays for itself while providing additional savings.
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
-                      <p className="text-orange-800 text-sm">
-                        Your EMI is higher than monthly savings by ₹{Math.abs(savingsComparison.netBenefit).toLocaleString()}.
-                        Consider a longer tenure or larger down payment to reduce EMI.
-                      </p>
-                    </div>
-                  )}
                 </CardContent>
               </Card>
             </TabsContent>
